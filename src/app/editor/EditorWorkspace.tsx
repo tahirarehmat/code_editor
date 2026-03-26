@@ -3,7 +3,7 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { html } from "@codemirror/lang-html";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_DOCUMENT,
   loadDocument,
@@ -14,12 +14,60 @@ import { buildPreviewDocument } from "@/lib/previewHtml";
 const SAVE_DEBOUNCE_MS = 450;
 const PREVIEW_DEBOUNCE_MS = 120;
 
+const DOWNLOAD_FILENAME = "index.html";
+
+const toolbarIconBtnClass =
+  "inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500";
+
+function CopyIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  );
+}
+
+function DownloadIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" x2="12" y1="15" y2="3" />
+    </svg>
+  );
+}
+
 export default function EditorWorkspace() {
   const [value, setValue] = useState(DEFAULT_DOCUMENT);
   const [previewSrc, setPreviewSrc] = useState(() =>
     buildPreviewDocument(DEFAULT_DOCUMENT),
   );
   const [hydrated, setHydrated] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const doc = loadDocument();
@@ -47,6 +95,36 @@ export default function EditorWorkspace() {
 
   const onChange = useCallback((v: string) => setValue(v), []);
 
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
+
+  const copyAll = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }, [value]);
+
+  const downloadHtml = useCallback(() => {
+    const blob = new Blob([value], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = DOWNLOAD_FILENAME;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [value]);
+
   if (!hydrated) {
     return (
       <div className="flex h-[100dvh] items-center justify-center bg-zinc-950 text-sm text-zinc-400">
@@ -71,8 +149,38 @@ export default function EditorWorkspace() {
           className="flex min-h-[40vh] min-w-0 flex-1 flex-col border-zinc-800 md:min-h-0 md:border-r"
           aria-label="Source"
         >
-          <div className="shrink-0 border-b border-zinc-800 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Code
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-800 px-3 py-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Code
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="sr-only" aria-live="polite" aria-atomic="true">
+                {copied ? "Copied to clipboard" : ""}
+              </span>
+              {copied ? (
+                <span className="text-xs font-medium text-emerald-400/90">
+                  Copied
+                </span>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void copyAll()}
+                className={toolbarIconBtnClass}
+                title={copied ? "Copied" : "Copy all code"}
+                aria-label={copied ? "Copied" : "Copy all code"}
+              >
+                <CopyIcon />
+              </button>
+              <button
+                type="button"
+                onClick={downloadHtml}
+                className={toolbarIconBtnClass}
+                title={`Download as ${DOWNLOAD_FILENAME}`}
+                aria-label={`Download HTML file as ${DOWNLOAD_FILENAME}`}
+              >
+                <DownloadIcon />
+              </button>
+            </div>
           </div>
           <div className="min-h-0 flex-1 overflow-hidden">
             <CodeMirror
