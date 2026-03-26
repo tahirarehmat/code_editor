@@ -10,6 +10,10 @@ import {
   saveDocument,
 } from "@/lib/editorStorage";
 import { buildPreviewDocument } from "@/lib/previewHtml";
+import {
+  buildShareableEditorUrl,
+  readSharedHtmlFromWindow,
+} from "@/lib/shareUrl";
 
 const SAVE_DEBOUNCE_MS = 450;
 const PREVIEW_DEBOUNCE_MS = 120;
@@ -60,6 +64,26 @@ function DownloadIcon({ className }: { className?: string }) {
   );
 }
 
+function LinkIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
 export default function EditorWorkspace() {
   const [value, setValue] = useState(DEFAULT_DOCUMENT);
   const [previewSrc, setPreviewSrc] = useState(() =>
@@ -67,13 +91,20 @@ export default function EditorWorkspace() {
   );
   const [hydrated, setHydrated] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const copiedTimerRef = useRef<number | null>(null);
+  const shareCopiedTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const doc = loadDocument();
+    const fromUrl = readSharedHtmlFromWindow();
+    const doc = fromUrl ?? loadDocument();
     setValue(doc);
     setPreviewSrc(buildPreviewDocument(doc));
     setHydrated(true);
+    if (fromUrl !== null) {
+      const url = buildShareableEditorUrl(fromUrl);
+      window.history.replaceState(null, "", url);
+    }
   }, []);
 
   useEffect(() => {
@@ -98,6 +129,8 @@ export default function EditorWorkspace() {
   useEffect(() => {
     return () => {
       if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
+      if (shareCopiedTimerRef.current)
+        window.clearTimeout(shareCopiedTimerRef.current);
     };
   }, []);
 
@@ -123,6 +156,23 @@ export default function EditorWorkspace() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  }, [value]);
+
+  const copyShareUrl = useCallback(async () => {
+    const url = buildShareableEditorUrl(value);
+    try {
+      await navigator.clipboard.writeText(url);
+      window.history.replaceState(null, "", url);
+      setShareCopied(true);
+      if (shareCopiedTimerRef.current)
+        window.clearTimeout(shareCopiedTimerRef.current);
+      shareCopiedTimerRef.current = window.setTimeout(
+        () => setShareCopied(false),
+        2500,
+      );
+    } catch {
+      setShareCopied(false);
+    }
   }, [value]);
 
   if (!hydrated) {
@@ -153,9 +203,9 @@ export default function EditorWorkspace() {
             <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Code
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <span className="sr-only" aria-live="polite" aria-atomic="true">
-                {copied ? "Copied to clipboard" : ""}
+                {copied ? "Copied to clipboard" : shareCopied ? "Share link copied" : ""}
               </span>
               {copied ? (
                 <span className="text-xs font-medium text-emerald-400/90">
@@ -180,6 +230,28 @@ export default function EditorWorkspace() {
               >
                 <DownloadIcon />
               </button>
+              <button
+                type="button"
+                onClick={() => void copyShareUrl()}
+                className={toolbarIconBtnClass}
+                title={
+                  shareCopied
+                    ? "Link copied"
+                    : "Copy shareable link"
+                }
+                aria-label={
+                  shareCopied
+                    ? "Link copied"
+                    : "Copy shareable link with compressed HTML in URL hash"
+                }
+              >
+                <LinkIcon />
+              </button>
+              {shareCopied ? (
+                <span className="text-xs font-medium text-emerald-400/90">
+                  Link copied
+                </span>
+              ) : null}
             </div>
           </div>
           <div className="min-h-0 flex-1 overflow-hidden">

@@ -8,6 +8,7 @@ A small **Next.js** app for editing a **single HTML document** with a **live pre
 - **Editor** (`/editor`) — CodeMirror 6 with HTML highlighting (VS Code–style dark theme), split **code** and **preview** panes (stacked on small screens).
 - **One file** — the document is one HTML string; use **`<style>`** blocks or **inline `style=""`** only (external stylesheets are blocked in the preview via **Content-Security-Policy**).
 - **Persistence** — debounced save to `localStorage` under the key defined in `src/lib/editorStorage.ts`.
+- **Share via URL** — link icon copies a URL whose **hash** carries the document **compressed** with [LZ-String](https://github.com/pieroxy/lz-string) (`#z=…`), which is much shorter than raw base64. Older links using `#e=` (base64) still decode. Very large pages can still hit browser URL length limits.
 - **Preview sandbox** — preview runs in an `iframe` with `sandbox=""` (no scripts in the host’s security model for that frame).
 
 ## Tech stack
@@ -44,6 +45,7 @@ Open [http://localhost:3000](http://localhost:3000). You will be sent to `/edito
 | `src/app/editor/EditorWorkspace.tsx` | CodeMirror, preview `iframe`, save/load |
 | `src/lib/editorStorage.ts` | Default HTML, `localStorage` key and helpers |
 | `src/lib/previewHtml.ts` | Wraps user HTML and injects preview CSP meta |
+| `src/lib/shareUrl.ts` | Share links: compressed `#z=` (LZ-String), legacy `#e=` base64 |
 
 ## Deploying
 
