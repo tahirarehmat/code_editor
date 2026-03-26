@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Code Editor
 
-## Getting Started
+A small **Next.js** app for editing a **single HTML document** with a **live preview** beside the editor. Work is stored in **`localStorage`** in the browser—no backend or database.
 
-First, run the development server:
+## Features
+
+- **Landing** (`/`) — short intro with a circular-style entrance animation, then automatic navigation to the editor (timing matches the animation; **“Open editor now”** skips the wait).
+- **Editor** (`/editor`) — CodeMirror 6 with HTML highlighting (VS Code–style dark theme), split **code** and **preview** panes (stacked on small screens).
+- **One file** — the document is one HTML string; use **`<style>`** blocks or **inline `style=""`** only (external stylesheets are blocked in the preview via **Content-Security-Policy**).
+- **Persistence** — debounced save to `localStorage` under the key defined in `src/lib/editorStorage.ts`.
+- **Preview sandbox** — preview runs in an `iframe` with `sandbox=""` (no scripts in the host’s security model for that frame).
+
+## Tech stack
+
+- [Next.js](https://nextjs.org) 16 (App Router), React 19, TypeScript
+- [Tailwind CSS](https://tailwindcss.com) v4
+- [@uiw/react-codemirror](https://github.com/uiwjs/react-codemirror) + `@codemirror/lang-html`
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). You will be sent to `/editor` after the intro, or use **Open editor now** immediately.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command        | Description              |
+| -------------- | ------------------------ |
+| `npm run dev`  | Development server       |
+| `npm run build` | Production build        |
+| `npm run start` | Run production server   |
+| `npm run lint`  | ESLint                   |
 
-## Learn More
+## Project layout (high level)
 
-To learn more about Next.js, take a look at the following resources:
+| Path | Role |
+| ---- | ---- |
+| `src/app/page.tsx` | Home route; mounts the landing client UI |
+| `src/app/HomeLanding.tsx` | Landing animation and redirect logic |
+| `src/app/editor/page.tsx` | Editor route metadata + `EditorWorkspace` |
+| `src/app/editor/EditorWorkspace.tsx` | CodeMirror, preview `iframe`, save/load |
+| `src/lib/editorStorage.ts` | Default HTML, `localStorage` key and helpers |
+| `src/lib/previewHtml.ts` | Wraps user HTML and injects preview CSP meta |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploying
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Build with `npm run build`, then run `npm run start`, or deploy to any platform that supports Next.js (e.g. [Vercel](https://vercel.com/docs/frameworks/nextjs)).
 
-## Deploy on Vercel
+## Browser notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Intro motion uses CSS `sin()` / `cos()` for the circular entry path; use a current browser or rely on **reduced motion** preferences for a simpler path.
+- Clearing site data removes the saved document from `localStorage`.

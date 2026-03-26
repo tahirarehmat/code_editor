@@ -24,3 +24,56 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Fly in along a circular path: start at (cos(a), sin(a)) * --orbit-r, end at rest. */
+@keyframes home-circular-in {
+  from {
+    opacity: 0;
+    transform: translate(
+        calc(cos(var(--a)) * var(--orbit-r)),
+        calc(sin(var(--a)) * var(--orbit-r))
+      )
+      scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes home-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.home-launch__el {
+  opacity: 0;
+  animation: home-circular-in 0.78s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Duration set via --home-auto-redirect-ms on the landing root (must match TS timing). */
+.home-launch__progress-bar {
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation-name: home-progress;
+  animation-duration: var(--home-auto-redirect-ms, 1.28s);
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-launch__el {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .home-launch__progress-bar {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
