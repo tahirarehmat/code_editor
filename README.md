@@ -5,7 +5,7 @@ A small **Next.js** app for editing a **single HTML document** with a **live pre
 ## Features
 
 - **Landing** (`/`) — short intro with a circular-style entrance animation, then automatic navigation to the editor (timing matches the animation; **“Open editor now”** skips the wait).
-- **Editor** (`/editor`) — CodeMirror 6 with HTML highlighting (VS Code–style dark theme), split **code** and **preview** panes (stacked on small screens).
+- **Editor** (`/editor`) — CodeMirror 6 with HTML highlighting (VS Code–style dark theme). **Desktop:** code and preview side by side. **Mobile:** code only until you tap **Preview**; tap **Code** to return.
 - **One file** — the document is one HTML string; use **`<style>`** blocks or **inline `style=""`** only (external stylesheets are blocked in the preview via **Content-Security-Policy**).
 - **Persistence** — debounced save to `localStorage` under the key defined in `src/lib/editorStorage.ts`.
 - **Share via URL** — link icon copies a URL whose **hash** carries the document **compressed** with [LZ-String](https://github.com/pieroxy/lz-string) (`#z=…`), which is much shorter than raw base64. Older links using `#e=` (base64) still decode. Very large pages can still hit browser URL length limits.

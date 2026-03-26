@@ -92,6 +92,8 @@ export default function EditorWorkspace() {
   const [hydrated, setHydrated] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  /** Below `md`, only one pane at a time: editor first, preview after user taps Preview. */
+  const [mobilePane, setMobilePane] = useState<"code" | "preview">("code");
   const copiedTimerRef = useRef<number | null>(null);
   const shareCopiedTimerRef = useRef<number | null>(null);
 
@@ -196,13 +198,26 @@ export default function EditorWorkspace() {
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <section
-          className="flex min-h-[40vh] min-w-0 flex-1 flex-col border-zinc-800 md:min-h-0 md:border-r"
+          className={
+            mobilePane === "preview"
+              ? "hidden min-h-0 min-w-0 flex-1 flex-col border-zinc-800 md:flex md:border-r"
+              : "flex min-h-0 min-w-0 flex-1 flex-col border-zinc-800 md:border-r"
+          }
           aria-label="Source"
         >
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-800 px-3 py-1.5">
-            <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Code
-            </span>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                Code
+              </span>
+              <button
+                type="button"
+                className="md:hidden shrink-0 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-zinc-200 transition-colors hover:border-zinc-600 hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                onClick={() => setMobilePane("preview")}
+              >
+                Preview
+              </button>
+            </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <span className="sr-only" aria-live="polite" aria-atomic="true">
                 {copied ? "Copied to clipboard" : shareCopied ? "Share link copied" : ""}
@@ -273,11 +288,26 @@ export default function EditorWorkspace() {
         </section>
 
         <section
-          className="flex min-h-[40vh] min-w-0 flex-1 flex-col md:min-h-0"
+          className={
+            mobilePane === "code"
+              ? "hidden min-h-0 min-w-0 flex-1 flex-col md:flex"
+              : "flex min-h-0 min-w-0 flex-1 flex-col"
+          }
           aria-label="Preview"
         >
-          <div className="shrink-0 border-b border-zinc-800 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Preview
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-800 px-3 py-1.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                className="md:hidden shrink-0 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-zinc-200 transition-colors hover:border-zinc-600 hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                onClick={() => setMobilePane("code")}
+              >
+                Code
+              </button>
+              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                Preview
+              </span>
+            </div>
           </div>
           <iframe
             title="Live preview"
